@@ -1,0 +1,225 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.App {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #000;
+}
+
+.game-board {
+  position: relative;
+  width: 70%; /* Middle 70% of the screen */
+  height: 90vh; /* Set height to 90vh */
+  background-color: #111;
+  color: #fff;
+  overflow: hidden;
+  border: 2px solid #ffdf5d;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Welcome message styling */
+.welcome-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 36px;
+  color: #ffdf5d; /* Color for the welcome message */
+  font-family: 'Press Start 2P', cursive;
+}
+
+.fade-out {
+  opacity: 0;
+  transition: opacity 1s ease; /* Adjust duration and easing as needed */
+}
+
+/* Button styling */
+.start-button,
+.play-again-button,
+.quit-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 20px;
+  font-family: 'Press Start 2P', cursive;
+  color: #ffdf5d;
+  background-color: #222;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.start-button:hover,
+.play-again-button:hover,
+.quit-button:hover {
+  background-color: #ffdf5d;
+  color: #111;
+  transform: scale(1.05);
+}
+
+/* Falling word animation */
+.falling-word {
+  position: absolute;
+  top: 0;
+  font-size: 1.5rem;
+  color: #ffdf5d;
+  animation: fallAnimation linear forwards; /* Change to unique keyframe name */
+  font-family: 'Press Start 2P', cursive;
+}
+
+@keyframes fallAnimation { /* Updated keyframe name */
+  from {
+    top: 0;
+    opacity: 1;
+  }
+  to {
+    top: 90%; /* Stop falling just above input */
+    opacity: 0;
+  }
+}
+
+/* Endpoint line just above the input box */
+.endpoint-line {
+  position: absolute;
+  bottom: 80px;
+  width: 100%;
+  height: 3px;
+  background-color: red;
+}
+
+/* Input container styling */
+.input-container {
+  position: absolute;
+  bottom: 20px;
+  width: 80%;
+  display: flex;
+  justify-content: center;
+}
+
+.game-input {
+  width: 100%;
+  padding: 10px;
+  font-size: 1.2rem;
+  border-radius: 5px;
+  border: 2px solid #ffdf5d;
+  background-color: #333;
+  color: #ffdf5d;
+}
+
+/* HUD styling */
+.hud {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: #ffdf5d;
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  width: 94%;
+  font-size: 34px;
+  font-family: 'VT323', sans-serif;
+}
+
+
+
+/* Wave indicator styling */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.wave-indicator {
+  position: fixed; /* Use fixed positioning for centering */
+  top: 50%; /* Center vertically */
+  left: 50%; /* Center horizontally */
+  transform: translate(-50%, -50%); /* Adjust position */
+  font-size: 48px; /* Increased font size */
+  color: #ffdf5d; /* Gold color */
+  text-align: center; /* Center text alignment */
+  z-index: 3; /* Ensure it's above other elements */
+  opacity: 0; /* Initially hidden */
+  animation: fadeIn 1s forwards, fadeOut 1s forwards; /* Fading effects */
+  animation-delay: 0s, 1.5s; /* Delay fade-out until after fade-in */
+  animation-fill-mode: forwards; /* Keep the last frame after animation ends */
+  font-family: 'VT323', sans-serif;
+}
+
+/* Game over message styling */
+.game-over-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 36px;
+  color: #ffdf5d; /* Color for the game over message */
+  font-family: 'Press Start 2P', cursive;
+  text-align: center;
+}
+
+/* Background container for stars */
+.starry-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;  /* Full width of the viewport */
+  height: 100vh; /* Full height of the viewport */
+  overflow: hidden;
+  z-index: 1; /* Set z-index to ensure it stays behind the game board */
+  pointer-events: none; /* Allow clicks to pass through */
+}
+
+/* Styling individual stars */
+.star {
+  position: absolute;
+  width: 2px;  /* Width of the star */
+  height: 2px; /* Height of the star */
+  background-color: white; /* Color of the star */
+  border-radius: 50%; /* Makes it circular */
+  opacity: 0.8; /* Transparency of the star */
+  animation: fall linear infinite; /* Falling animation */
+  box-shadow: 0 0 5px white; /* Glowing effect */
+}
+
+/* Keyframes for falling stars animation */
+@keyframes fall {
+  0% {
+    transform: translateY(-100px); /* Start above the viewport */
+  }
+  100% {
+    transform: translateY(100vh); /* End at the bottom of the viewport */
+  }
+}
+
+/* Adjustments for different screen sizes */
+@media (max-width: 768px) {
+  .star {
+    width: 1.5px; /* Smaller stars for smaller screens */
+    height: 1.5px; /* Smaller stars for smaller screens */
+  }
+}

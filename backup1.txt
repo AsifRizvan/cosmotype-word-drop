@@ -1,0 +1,426 @@
+﻿import React, { useEffect, useState } from 'react';
+import HUD from './HUD';
+import { words } from './Word';
+
+function GameBoard() {
+const [score, setScore] = useState(0);
+const [wave, setWave] = useState(1);
+const [input, setInput] = useState("");
+const [fallingWords, setFallingWords] = useState([]);
+const [usedWords, setUsedWords] = useState(new Set());
+const [gameStarted, setGameStarted] = useState(false);
+const [showWaveIndicator, setShowWaveIndicator] = useState(false);
+const [gameOver, setGameOver] = useState(false);
+const [fadeOut, setFadeOut] = useState(false); // For fade effect on start button
+const [currentStarCount, setCurrentStarCount] = useState(0);
+const maxStars = 1; // Set the maximum number of stars
+useEffect(() => {
+if (gameStarted) {
+startWave();
+}
+}, [wave, gameStarted]);
+
+useEffect(() => {
+const checkFallingWords = setInterval(() => {
+const fallingElements = document.querySelectorAll('.falling-word');
+fallingElements.forEach(element => {
+const rect = element.getBoundingClientRect();
+const endpoint = document.querySelector('.endpoint-line').getBoundingClientRect();
+
+if (rect.bottom >= endpoint.top) {
+setGameOver(true);
+}
+});
+}, 100);
+
+return () => clearInterval(checkFallingWords);
+}, [fallingWords, score]);
+
+useEffect(() => {
+const starContainer = document.querySelector('.starry-background');
+function createStar() {
+if (currentStarCount >= maxStars) return; // Limit the number of stars
+const star = document.createElement('div');
+star.className = 'star';
+// Set random position and animation duration
+const xPos = Math.random() * 10; // Random position in percentage
+const duration = Math.random() * 3 + 2; // Random duration between 2s and 5s
+const delay = Math.random() * 5; // Random delay for staggered falling
+star.style.left = `${xPos}vw`; // Set horizontal position
+star.style.animationDuration = `${duration}s`; // Set falling speed
+star.style.animationDelay = `${delay}s`; // Delay for staggered effect
+starContainer.appendChild(star); // Add star to the container
+setCurrentStarCount(prev => prev + 1); // Increase the star count
+// Remove star after it falls
+setTimeout(() => {
+star.remove();
+setCurrentStarCount(prev => prev - 1); // Decrease the star count when the star is removed
+}, (duration + delay) * 1000); // Remove after the fall
+}
+
+// Create one star every 1000 ms (1 second)
+const starCreationInterval = setInterval(createStar, 1000);
+
+return () => clearInterval(starCreationInterval); // Clean up interval on component unmount
+}, [currentStarCount, maxStars]); // Add dependencies for useEffect
+
+const resetGame = () => {
+setScore(0);
+setWave(1);
+setInput("");
+setFallingWords([]);
+setUsedWords(new Set());
+setGameStarted(false);
+setGameOver(false);
+};
+
+const startGame = () => {
+resetGame();
+setFadeOut(true); // Start fading out the button
+setTimeout(() => {
+setGameStarted(true);
+setFadeOut(false); // Fade out completed
+setShowWaveIndicator(false);
+startWave(1);
+}, 1000); // Wait for fade out to complete before starting the game
+};
+
+const generateUniqueWord = () => {
+
+let word;
+do {
+word = words[Math.floor(Math.random() * words.length)];
+} while (usedWords.has(word));
+
+setUsedWords(prev => new Set(prev).add(word));
+return word;
+};
+
+const startWave = (waveNo) => {
+const newWordsCount = waveNo === 1 ? 1 : waveNo; // Ensures only 1 word for wave 1
+let wordIndex = 0;
+setShowWaveIndicator(true);
+setTimeout(() => {
+setShowWaveIndicator(false);
+spawnWords(newWordsCount, wordIndex);
+}, 2000);
+};
+const spawnWords = (newWordsCount, wordIndex) => {
+const spawnWord = () => {
+if (wordIndex < newWordsCount) {
+const newWord = {
+word: generateUniqueWord(),
+position: 10 + Math.random() * 50,
+duration: 15 + Math.random() * 1
+};
+setFallingWords(prevWords => [...prevWords, newWord]);
+wordIndex++;
+setTimeout(spawnWord, 1000);
+}
+};
+spawnWord();
+};
+
+const handleInputChange = (e) => {
+const inputValue = e.target.value.trim().toLowerCase();
+setInput(inputValue);
+
+if (fallingWords.some(({ word }) => word.toLowerCase() === inputValue)) {
+setScore(score + 10);
+setFallingWords(prevWords => prevWords.filter(({ word }) => word.toLowerCase() !== inputValue));
+setInput('');
+}
+
+if (fallingWords.length === 1 && fallingWords[0].word.toLowerCase() === inputValue) {
+setWave(prevWave => prevWave + 1);
+startWave(wave + 1);
+}
+};
+
+const handlePlayAgain = () => { // Reset the game state and start a new game
+setGameOver(false);
+setWave(1)
+setScore(0);
+setInput("");
+setFallingWords([]);
+setUsedWords(new Set());
+startWave(1);
+};
+
+const handleQuit = () => {
+resetGame(); // Reset the game state and go back to the welcome message
+};
+
+return (
+<>
+<div className="starry-background"></div>
+
+<div className="game-board">
+{!gameStarted && !gameOver && (
+<div className="welcome-message">
+<h1>Welcome to the Universe!</h1>
+<button className={`start-button ${fadeOut ? 'fade-out' : ''}`} onClick={startGame}>Start Game</button>
+</div>
+)}
+<HUD 
+score={score} 
+wave={wave} 
+input={input} 
+handleInputChange={handleInputChange} 
+onStartGame={startGame} 
+/>
+{showWaveIndicator && (
+<div className="wave-indicator fade-in-out">Wave {wave}</div>
+)}
+{gameOver && (
+<div className="game-over-message" >
+<h2>Game Over!</h2>
+<p style={{marginTop:'15px'}}>Your Score:{score}</p>
+<button className="play-again-button" style={{marginRight:'20px'}} onClick={handlePlayAgain}>Play Again</button>
+<button className="quit-button" onClick={handleQuit}>Quit</button>
+</div>
+)}
+<div className="endpoint-line"></div>
+{fallingWords.map((fallingWord) => (
+<div 
+key={fallingWord.word}
+className="falling-word"
+style={{
+left: `${fallingWord.position}%`,
+animationDuration: `${fallingWord.duration}s`
+}}
+>
+{fallingWord.word}
+</div>
+))}
+<div className="input-container">
+<input
+className="game-input"
+value={input}
+onChange={handleInputChange}
+placeholder="Type the word here..."
+/>
+</div>
+</div>
+</>
+);
+}
+
+export default GameBoard;
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+
+.App {
+display: flex;
+justify-content: center;
+align-items: center;
+height: 100vh;
+background-color: #000;
+}
+
+.game-board {
+position: relative;
+width: 70%; /* Middle 70% of the screen */
+height: 90vh; /* Set height to 90vh */
+background-color: #111;
+color: #fff;
+overflow: hidden;
+border: 2px solid #ffdf5d;
+border-radius: 10px;
+display: flex;
+flex-direction: column;
+align-items: center;
+}
+
+/* Welcome message styling */
+.welcome-message {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+font-size: 36px;
+color: #ffdf5d; /* Color for the welcome message */
+font-family: 'Press Start 2P', cursive;
+}
+
+/* Button styling */
+.start-button,
+.play-again-button,
+.quit-button {
+margin-top: 20px;
+padding: 10px 20px;
+border: none;
+border-radius: 5px;
+font-size: 20px;
+font-family: 'Press Start 2P', cursive;
+color: #ffdf5d;
+background-color: #222;
+cursor: pointer;
+transition: background-color 0.3s, transform 0.2s;
+}
+
+.start-button:hover,
+.play-again-button:hover,
+.quit-button:hover {
+background-color: #ffdf5d;
+color: #111;
+transform: scale(1.05);
+}
+
+/* Falling word animation */
+.falling-word {
+position: absolute;
+top: 0;
+font-size: 1.5rem;
+color: #ffdf5d;
+animation: fallAnimation linear forwards; /* Change to unique keyframe name */
+font-family: 'Press Start 2P', cursive;
+}
+
+@keyframes fallAnimation { /* Updated keyframe name */
+from {
+top: 0;
+opacity: 1;
+}
+to {
+top: 90%; /* Stop falling just above input */
+opacity: 0;
+}
+}
+
+/* Endpoint line just above the input box */
+.endpoint-line {
+position: absolute;
+bottom: 80px;
+width: 100%;
+height: 3px;
+background-color: red;
+}
+
+/* Input container styling */
+.input-container {
+position: absolute;
+bottom: 20px;
+width: 80%;
+display: flex;
+justify-content: center;
+}
+
+.game-input {
+width: 100%;
+padding: 10px;
+font-size: 1.2rem;
+border-radius: 5px;
+border: 2px solid #ffdf5d;
+background-color: #333;
+color: #ffdf5d;
+}
+
+/* HUD styling */
+.hud {
+position: absolute;
+top: 20px;
+left: 20px;
+color: #ffdf5d;
+display: flex;
+justify-content: center;
+gap: 10px;
+width: 94%;
+font-size: 24px;
+}
+
+/* Wave indicator styling */
+@keyframes fadeIn {
+0% {
+opacity: 0;
+}
+100% {
+opacity: 1;
+}
+}
+
+@keyframes fadeOut {
+0% {
+opacity: 1;
+}
+100% {
+opacity: 0;
+}
+}
+
+.wave-indicator {
+position: fixed; /* Use fixed positioning for centering */
+top: 50%; /* Center vertically */
+left: 50%; /* Center horizontally */
+transform: translate(-50%, -50%); /* Adjust position */
+font-size: 48px; /* Increased font size */
+color: #ffdf5d; /* Gold color */
+text-align: center; /* Center text alignment */
+z-index: 3; /* Ensure it's above other elements */
+opacity: 0; /* Initially hidden */
+animation: fadeIn 1s forwards, fadeOut 1s forwards; /* Fading effects */
+animation-delay: 0s, 1.5s; /* Delay fade-out until after fade-in */
+animation-fill-mode: forwards; /* Keep the last frame after animation ends */
+}
+
+/* Game over message styling */
+.game-over-message {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+font-size: 36px;
+color: #ffdf5d; /* Color for the game over message */
+font-family: 'Press Start 2P', cursive;
+text-align: center;
+}
+
+/* Background container for stars */
+.starry-background {
+position: absolute;
+top: 0;
+left: 0;
+width: 100vw; /* Full width of the viewport */
+height: 100vh; /* Full height of the viewport */
+overflow: hidden;
+z-index: 1; /* Set z-index to ensure it stays behind the game board */
+pointer-events: none; /* Allow clicks to pass through */
+}
+
+/* Styling individual stars */
+.star {
+position: absolute;
+width: 2px; /* Width of the star */
+height: 2px; /* Height of the star */
+background-color: white; /* Color of the star */
+border-radius: 50%; /* Makes it circular */
+opacity: 0.8; /* Transparency of the star */
+animation: fall linear infinite; /* Falling animation */
+box-shadow: 0 0 5px white; /* Glowing effect */
+}
+
+/* Keyframes for falling stars animation */
+@keyframes fall {
+0% {
+transform: translateY(-100px); /* Start above the viewport */
+}
+100% {
+transform: translateY(100vh); /* End at the bottom of the viewport */
+}
+}
+
+/* Adjustments for different screen sizes */
+@media (max-width: 768px) {
+.star {
+width: 1.5px; /* Smaller stars for smaller screens */
+height: 1.5px; /* Smaller stars for smaller screens */
+}
+}
+
+
