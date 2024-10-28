@@ -98,40 +98,64 @@ function GameBoard() {
         }, 1000); // Wait for fade out to complete before starting the game
     };
 
-    const generateUniqueWord = () => {
-        let word;
-        do {
-            word = words[Math.floor(Math.random() * words.length)];
-        } while (usedWords.has(word) || fallingWords.some(({ word: fallingWord }) => fallingWord === word));
+    const generateUniqueWordsForWave = (newWordsCount) => {
+        const uniqueWords = new Set(); // Use a Set to ensure uniqueness
+        let attempts = 0; // Track the number of attempts to generate unique words
+        const maxAttempts = words.length * 2; // Allow a reasonable number of attempts
     
-        setUsedWords(prev => new Set(prev).add(word));
-        return word;
+        while (uniqueWords.size < newWordsCount && attempts < maxAttempts) {
+            const word = words[Math.floor(Math.random() * words.length)];
+            if (!usedWords.has(word)) { // Ensure the word hasn't been used yet
+                uniqueWords.add(word);
+            }
+            attempts++;
+        }
+    
+        // Check if we ran out of unique words
+        if (uniqueWords.size < newWordsCount) {
+            alert("Not enough unique words available! Please reset the game or add more words."); // Alert the user
+          
+        }
+    
+        // Add the new unique words to the usedWords set
+        uniqueWords.forEach(word => {
+            setUsedWords(prev => {
+                const updatedSet = new Set(prev);
+                updatedSet.add(word);
+                return updatedSet;
+            });
+        });
+    
+        return Array.from(uniqueWords); // Convert the Set back to an array
     };
-
-    const startWave = (waveNo) => {
-        const newWordsCount = waveNo === 1 ? 1 : waveNo; // Ensures only 1 word for wave 1
-        let wordIndex = 0;
     
+    
+    const startWave = (waveNo) => {
+        // const newWordsCount = waveNo === 1 ? 1 : waveNo; // Ensures only 1 word for wave 1
+        const newWordsCount = 2 + (waveNo - 1); // Ensures only 1 word for wave 1
+        const uniqueWordsForWave = generateUniqueWordsForWave(newWordsCount); // Get unique words for this wave
+        let wordIndex = 0;
+        
         setShowWaveIndicator(true);
         setTimeout(() => {
             setShowWaveIndicator(false);
-            spawnWords(newWordsCount, wordIndex);
+            spawnWords(uniqueWordsForWave, wordIndex); // Pass the words to spawnWords
         }, 2000);
     };
     
-    const spawnWords = (newWordsCount, wordIndex) => {
+    const spawnWords = (wordsArray, wordIndex) => {
         const spawnWord = () => {
-            if (wordIndex < newWordsCount) {
+            if (wordIndex < wordsArray.length) {
                 const newWord = {
-                    word: generateUniqueWord(),
+                    word: wordsArray[wordIndex], // Use the pre-generated word
                     position: 10 + Math.random() * 50,
-                    duration: 10 + Math.random() * 1
+                    duration: 25 + Math.random() * 1
                 };
     
                 setFallingWords(prevWords => [...prevWords, newWord]);
                 wordIndex++;
     
-                setTimeout(spawnWord, 1000);
+                setTimeout(spawnWord, 1000); // Drop the next word after 1 second
             }
         };
     
@@ -141,19 +165,23 @@ function GameBoard() {
     const handleInputChange = (e) => {
         const inputValue = e.target.value.trim().toLowerCase();
         setInput(inputValue);
-
-        if (fallingWords.some(({ word }) => word.toLowerCase() === inputValue)) {
-            setScore(score + 10);
+    
+        // Filter out all matching words instead of just one instance
+        const wordMatches = fallingWords.filter(({ word }) => word.toLowerCase() === inputValue);
+        
+        if (wordMatches.length > 0) {
+            // Update the score for each matching word and remove them from the screen
+            setScore(score + (10 * wordMatches.length));
             setFallingWords(prevWords => prevWords.filter(({ word }) => word.toLowerCase() !== inputValue));
             setInput('');
         }
-
-        if (fallingWords.length === 1 && fallingWords[0].word.toLowerCase() === inputValue) {
+    
+        // Trigger the next wave if the last word in the wave has been typed correctly
+        if (fallingWords.length === 1 && wordMatches.length === 1) {
             setWave(prevWave => prevWave + 1);
             startWave(wave + 1);
         }
     };
-
     const handlePlayAgain = () => { // Reset the game state and start a new game
         setGameOver(false);
         inputRef.current.focus();
@@ -161,7 +189,7 @@ function GameBoard() {
         setScore(0);
         setInput("");
         setFallingWords([]);
-        setUsedWords(new Set());
+        setUsedWords(new Set()); // Clear used words for a fresh game
         startWave(1);
     };
 
